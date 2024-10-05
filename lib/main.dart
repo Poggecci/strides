@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:strides/models/activities.dart';
 import 'package:strides/pages/plan_maker.dart';
-import 'package:strides/shared/widgets/add_activity.dart';
 
 void main() {
   runApp(const MyApp());
