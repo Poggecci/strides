@@ -19,8 +19,15 @@ class Activity {
   const Activity({required this.kind, required this.cycleDuration});
 }
 
+class SessionDuration {
+  Duration? timeDuration;
+  int? cycleCount;
+  SessionDuration.time(this.timeDuration) : cycleCount = null;
+  SessionDuration.cycles(this.cycleCount) : timeDuration = null;
+}
+
 class ActivityPlan {
   final List<Activity> activities;
-  final Duration sessionDuration;
-  const ActivityPlan({required this.activities, required this.sessionDuration});
+  final SessionDuration duration;
+  const ActivityPlan({required this.activities, required this.duration});
 }

@@ -10,48 +10,79 @@ class PlanMaker extends StatefulWidget {
 }
 
 class _PlanMakerState extends State<PlanMaker> {
-  final ActivityPlan _plan =
-      // ignore: prefer_const_constructors
-      ActivityPlan(activities: [], sessionDuration: Duration.zero);
+  final List<Activity> _activities = [];
+  SessionDuration? _duration;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       children: [
         Expanded(
-          child: ListView.builder(
-            itemCount: _plan.activities.length,
+          child: ReorderableListView.builder(
+            itemCount: _activities.length,
+            onReorder: (oldIndex, newIndex) {
+              setState(() {
+                if (newIndex > oldIndex) {
+                  newIndex -= 1;
+                }
+                final activity = _activities.removeAt(oldIndex);
+                _activities.insert(newIndex, activity);
+              });
+            },
             itemBuilder: (context, index) {
-              final activity = _plan.activities[index];
+              final activity = _activities[index];
               return ListTile(
-                title: Text(activity.kind.displayName),
-                subtitle: Text(
-                    'Duration: ${activity.cycleDuration.inSeconds} seconds'),
-                trailing: IconButton(
-                  icon: const Icon(Icons.delete),
-                  onPressed: () {
-                    setState(() {
-                      _plan.activities.removeAt(index);
-                    });
-                  },
+                key: ValueKey(activity),
+                leading: ReorderableDragStartListener(
+                  index: index,
+                  child: const Icon(Icons.drag_handle),
                 ),
+                title: Text(
+                  activity.kind.displayName,
+                  style: const TextStyle(fontWeight: FontWeight.bold),
+                ),
+                subtitle: Text(
+                  'Duration: ${activity.cycleDuration.inSeconds} seconds',
+                ),
+                // Update trailing widget to include spacing
+                trailing: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.delete, color: Colors.red),
+                      onPressed: () {
+                        setState(() {
+                          _activities.removeAt(index);
+                        });
+                      },
+                    ),
+                    const SizedBox(width: 8), // Add space between the icons
+                  ],
+                ),
+                tileColor: Colors.grey[200], // Optional: to make it stand out
+                contentPadding:
+                    const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
               );
             },
           ),
         ),
-        ElevatedButton(
-          onPressed: () async {
-            final maybeNewActivity = await showDialog<Activity>(
-              context: context,
-              builder: (context) => const AddActivity(),
-            );
-            if (maybeNewActivity != null) {
-              setState(() {
-                _plan.activities.add(maybeNewActivity);
-              });
-            }
-          },
-          child: const Text("Add Activity"),
+        Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: ElevatedButton.icon(
+            onPressed: () async {
+              final maybeNewActivity = await showDialog<Activity>(
+                context: context,
+                builder: (context) => const AddActivity(),
+              );
+              if (maybeNewActivity != null) {
+                setState(() {
+                  _activities.add(maybeNewActivity);
+                });
+              }
+            },
+            icon: const Icon(Icons.add),
+            label: const Text("Add Activity"),
+          ),
         ),
       ],
     );
