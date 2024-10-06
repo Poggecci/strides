@@ -1,5 +1,5 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter/scheduler.dart';
 import 'package:strides/models/activities.dart';
 
 enum ActivityStatus { ongoing, paused, cancelled, completed }
@@ -13,13 +13,14 @@ class ActiveActivity extends StatefulWidget {
   State<ActiveActivity> createState() => _ActiveActivityState();
 }
 
-class _ActiveActivityState extends State<ActiveActivity> {
+class _ActiveActivityState extends State<ActiveActivity>
+    with SingleTickerProviderStateMixin {
   late ActivityStatus _status;
   late int _activityIndex;
   late Duration _activityTimeElapsed;
   late Duration _sessionTimeElapsed;
   late int _cyclesCompleted;
-  Timer? _timer;
+  late Ticker _ticker;
 
   final Map<ActivityKind, Duration> _activityTimes = {};
 
@@ -31,35 +32,39 @@ class _ActiveActivityState extends State<ActiveActivity> {
     _activityTimeElapsed = Duration.zero;
     _sessionTimeElapsed = Duration.zero;
     _cyclesCompleted = 0;
-    _startTimer();
+    _ticker = createTicker(_onTick);
+    _startTicker();
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
+    _ticker.dispose();
     super.dispose();
   }
 
-  void _startTimer() {
-    _timer = Timer.periodic(const Duration(seconds: 1), (timer) {
-      if (_status == ActivityStatus.ongoing) {
-        setState(() {
-          _activityTimeElapsed += const Duration(seconds: 1);
-          _sessionTimeElapsed += const Duration(seconds: 1);
-          _updateActivityTimes(widget.plan.activities[_activityIndex].kind,
-              const Duration(seconds: 1));
+  void _onTick(Duration elapsed) {
+    if (_status == ActivityStatus.ongoing) {
+      setState(() {
+        final delta = elapsed - _sessionTimeElapsed;
+        _activityTimeElapsed += delta;
+        _sessionTimeElapsed = elapsed;
+        _updateActivityTimes(
+            widget.plan.activities[_activityIndex].kind, delta);
 
-          if (_activityTimeElapsed >=
-              widget.plan.activities[_activityIndex].cycleDuration) {
-            _moveToNextActivity();
-          }
+        if (_activityTimeElapsed >=
+            widget.plan.activities[_activityIndex].cycleDuration) {
+          _moveToNextActivity();
+        }
 
-          if (_isSessionCompleted()) {
-            _completeSession();
-          }
-        });
-      }
-    });
+        if (_isSessionCompleted()) {
+          _completeSession();
+        }
+      });
+    }
+  }
+
+  void _startTicker() {
+    _ticker.start();
   }
 
   void _moveToNextActivity() {
@@ -83,28 +88,28 @@ class _ActiveActivityState extends State<ActiveActivity> {
   void _completeSession() {
     setState(() {
       _status = ActivityStatus.completed;
-      _timer?.cancel();
+      _ticker.stop();
     });
   }
 
   void _pauseSession() {
     setState(() {
       _status = ActivityStatus.paused;
-      _timer?.cancel();
+      _ticker.stop();
     });
   }
 
   void _resumeSession() {
     setState(() {
       _status = ActivityStatus.ongoing;
-      _startTimer();
+      _ticker.start();
     });
   }
 
   void _cancelSession() {
     setState(() {
       _status = ActivityStatus.cancelled;
-      _timer?.cancel();
+      _ticker.stop();
     });
   }
 
@@ -116,7 +121,7 @@ class _ActiveActivityState extends State<ActiveActivity> {
       _sessionTimeElapsed = Duration.zero;
       _cyclesCompleted = 0;
       _activityTimes.clear();
-      _startTimer();
+      _ticker.start();
     });
   }
 
@@ -128,15 +133,34 @@ class _ActiveActivityState extends State<ActiveActivity> {
   Widget _buildOngoingUI() {
     final currentActivity = widget.plan.activities[_activityIndex];
     final timeLeft = currentActivity.cycleDuration - _activityTimeElapsed;
+    final progress = _activityTimeElapsed.inMilliseconds /
+        currentActivity.cycleDuration.inMilliseconds;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(currentActivity.kind.activeName,
             style: Theme.of(context).textTheme.displayMedium),
         const SizedBox(height: 20),
-        Text(
-            'Time left: ${timeLeft.inMinutes}:${(timeLeft.inSeconds % 60).toString().padLeft(2, '0')}',
-            style: Theme.of(context).textTheme.displaySmall),
+        SizedBox(
+          width: 200,
+          height: 200,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              CircularProgressIndicator(
+                value: 1 - progress,
+                strokeWidth: 10,
+                backgroundColor: Colors.grey[300],
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+              ),
+              Text(
+                '${timeLeft.inMinutes.toString().padLeft(2, '0')}:${(timeLeft.inSeconds % 60).toString().padLeft(2, '0')}.${(timeLeft.inMilliseconds % 1000).toString().padLeft(3, '0')}',
+                style: Theme.of(context).textTheme.displaySmall,
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 40),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -154,15 +178,34 @@ class _ActiveActivityState extends State<ActiveActivity> {
   Widget _buildPausedUI() {
     final currentActivity = widget.plan.activities[_activityIndex];
     final timeLeft = currentActivity.cycleDuration - _activityTimeElapsed;
+    final progress = _activityTimeElapsed.inMilliseconds /
+        currentActivity.cycleDuration.inMilliseconds;
+
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
         Text(currentActivity.kind.activeName,
             style: Theme.of(context).textTheme.displayMedium),
         const SizedBox(height: 20),
-        Text(
-            'Time left: ${timeLeft.inMinutes}:${(timeLeft.inSeconds % 60).toString().padLeft(2, '0')}',
-            style: Theme.of(context).textTheme.displaySmall),
+        SizedBox(
+          width: 200,
+          height: 200,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              CircularProgressIndicator(
+                value: 1 - progress,
+                strokeWidth: 10,
+                backgroundColor: Colors.grey[300],
+                valueColor: const AlwaysStoppedAnimation<Color>(Colors.blue),
+              ),
+              Text(
+                '${timeLeft.inMinutes.toString().padLeft(2, '0')}:${(timeLeft.inSeconds % 60).toString().padLeft(2, '0')}.${(timeLeft.inMilliseconds % 1000).toString().padLeft(3, '0')}',
+                style: Theme.of(context).textTheme.displaySmall,
+              ),
+            ],
+          ),
+        ),
         const SizedBox(height: 40),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
@@ -188,8 +231,8 @@ class _ActiveActivityState extends State<ActiveActivity> {
             style: Theme.of(context).textTheme.displayMedium),
         const SizedBox(height: 20),
         ..._activityTimes.entries.map((entry) => Text(
-            '${entry.key.displayName}: ${entry.value.inMinutes} minutes',
-            style: Theme.of(context).textTheme.displaySmall)),
+            '${entry.key.displayName}: ${entry.value.inMinutes} minutes ${entry.value.inSeconds % 60} seconds',
+            style: Theme.of(context).textTheme.bodyLarge)),
         const SizedBox(height: 40),
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
