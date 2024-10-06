@@ -13,7 +13,7 @@ class PlanMaker extends StatefulWidget {
 
 class _PlanMakerState extends State<PlanMaker> {
   final List<Activity> _activities = [];
-  SessionDuration _duration = SessionDuration.time(const Duration(minutes: 30));
+  SessionDuration _duration = SessionDuration.cycles(8);
   bool _isCycleBased = true;
   final TextEditingController _cycleController =
       TextEditingController(text: '8');
