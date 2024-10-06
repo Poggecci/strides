@@ -24,17 +24,14 @@ jobs:
 
       - name: Enable Flutter Web
         run: |
-          cd matrical
           flutter config --enable-web
 
       - name: Download Dependencies
         run: |
-          cd matrical
           flutter pub get
 
       - name: Build
         run: |
-          cd matrical
           flutter build web --web-renderer canvaskit --base-href "/matrical/"
           cp -avr ./build/web/* ../
 
