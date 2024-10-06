@@ -33,7 +33,7 @@ jobs:
       - name: Build
         run: |
           flutter build web --web-renderer canvaskit
-          cp -avr ./build/web/* ../
+          cp -avr ./build/web/* .
 
       - name: Commit build
         uses: stefanzweifel/git-auto-commit-action@v5
