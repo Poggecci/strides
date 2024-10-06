@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/scheduler.dart';
 import 'package:strides/models/activities.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 enum ActivityStatus { ongoing, paused, cancelled, completed }
 
@@ -23,6 +24,7 @@ class _ActiveActivityState extends State<ActiveActivity>
   late int _cyclesCompleted;
   late Ticker _ticker;
   Stopwatch stopwatch = Stopwatch();
+  final AudioPlayer _audioPlayer = AudioPlayer();
 
   final Map<ActivityKind, Duration> _activityTimes = {};
 
@@ -38,12 +40,18 @@ class _ActiveActivityState extends State<ActiveActivity>
     _cyclesCompleted = 0;
     _ticker = createTicker(_onTick);
     _startStopwatch();
+    _playAudioForActivity();
   }
 
   @override
   void dispose() {
     _ticker.dispose();
     super.dispose();
+  }
+
+  Future<void> _playAudioForActivity() async {
+    await _audioPlayer.play(
+        AssetSource(widget.plan.activities[_activityIndex].kind.audioCuePath));
   }
 
   void _onTick(Duration elapsed) {
@@ -63,12 +71,12 @@ class _ActiveActivityState extends State<ActiveActivity>
     }
   }
 
-  void _startStopwatch() {
+  void _startStopwatch() async {
     stopwatch.start();
     _ticker.start();
   }
 
-  void _moveToNextActivity() {
+  void _moveToNextActivity() async {
     _updateActivityTimes(
         widget.plan.activities[_activityIndex].kind, _activityTimeElapsed);
     _activityIndex++;
@@ -79,6 +87,7 @@ class _ActiveActivityState extends State<ActiveActivity>
       _activityIndex = 0;
       _cyclesCompleted++;
     }
+    await _playAudioForActivity();
   }
 
   bool _isSessionCompleted() {
@@ -193,7 +202,11 @@ class _ActiveActivityState extends State<ActiveActivity>
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             ElevatedButton(
-                onPressed: _pauseSession, child: const Text('Pause')),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.red,
+                    foregroundColor: Colors.red.shade50),
+                onPressed: _pauseSession,
+                child: const Text('Pause')),
             ElevatedButton(
                 onPressed: _cancelSession, child: const Text('Cancel')),
           ],
@@ -216,7 +229,11 @@ class _ActiveActivityState extends State<ActiveActivity>
           mainAxisAlignment: MainAxisAlignment.spaceEvenly,
           children: [
             ElevatedButton(
-                onPressed: _resumeSession, child: const Text('Resume')),
+                style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.green,
+                    foregroundColor: Colors.green.shade50),
+                onPressed: _resumeSession,
+                child: const Text('Resume')),
             ElevatedButton(
                 onPressed: _cancelSession, child: const Text('Cancel')),
           ],

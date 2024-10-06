@@ -1,15 +1,25 @@
 enum ActivityKind {
   jog(
-    displayName: "Jog",
-    activeName: "Jogging",
-  ),
-  sprint(displayName: "Sprint", activeName: "Sprinting"),
-  walk(displayName: "Walk", activeName: "Walking");
+      displayName: "Jog",
+      activeName: "Jogging",
+      audioCuePath: "mixkit-atm-cash-machine-key-press-2841.wav"),
+  sprint(
+      displayName: "Sprint",
+      activeName: "Sprinting",
+      audioCuePath: "mixkit-positive-notification-951.wav"),
+  walk(
+      displayName: "Walk",
+      activeName: "Walking",
+      audioCuePath: "mixkit-interface-option-select-2573.wav");
 
-  const ActivityKind({required this.displayName, required this.activeName});
+  const ActivityKind(
+      {required this.displayName,
+      required this.activeName,
+      required this.audioCuePath});
 
   final String activeName;
   final String displayName;
+  final String audioCuePath;
 }
 
 class Activity {
