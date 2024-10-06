@@ -55,6 +55,13 @@ class _PlanMakerState extends State<PlanMaker> {
       );
       return;
     }
+    if (_isCycleBased && _duration.cycleCount! < 0) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Please select a positive number of cycles')),
+      );
+      return;
+    }
 
     final activityPlan = ActivityPlan(
       activities: _activities,
