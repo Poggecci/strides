@@ -32,7 +32,7 @@ jobs:
 
       - name: Build
         run: |
-          flutter build web --web-renderer canvaskit --base-href "/matrical/"
+          flutter build web --web-renderer canvaskit
           cp -avr ./build/web/* ../
 
       - name: Commit build
